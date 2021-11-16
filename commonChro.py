@@ -52,10 +52,8 @@ def findCommon(chromList1, chromList2, chro = {}):
 #Plotting the values returned by the findCommon function
 def PlotGraph(commonChro_p, file_name1, file_name2):
     #Data:
-    chro_label = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
-            'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14',
-            'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21',
-            'chr22', 'chr23', 'chr24']
+    chro_label = ['chr' + str(i) for i in range(1, 25)]
+    chro_label_num = [i for i in range(1, 25)]
     loc = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     loc1 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
