@@ -24,8 +24,8 @@ def storeData(file_dict):
     file_loc = file_dict['Begin Location']
     file_chro = file_dict['Chromosome']
 
-    for loc, chro in zip(file_loc, file_chro):
-        chromlist[loc].append(chro)
+    for chro, loc in zip(file_chro, file_loc):
+        chromlist[chro].append(loc)
 
     return chromlist
 
@@ -39,13 +39,20 @@ def findCommon(chromList1, chromList2, chro = {}):
 
     #accessing keys from the the dictonary and finding common ones
     if (greater()):
-        for key1 in chromList1.keys():
-            if (key1 in chromList2.keys()):
-                chro[key1] = [chromList1[key1], chromList2[key1]]
+        for chrom in chromList1.keys():
+            if (chrom in chromList2.keys()):
+                for loc1 in chromList1[chrom]:
+                    for loc2 in chromList2[chrom]:
+                        if (loc1 == loc2):
+                            chro[chrom].append(loc1)
+		
     else:
-        for key1 in chromList2.keys():
-            if (key1 in chromList1.keys()):
-                chro[key1] = [chromList1[key1], chromList2[key1]]
+        for chrom in chromList2.keys():
+            if (chrom in chromList1.keys()):
+                for loc1 in chromList2[chrom]:
+                    for loc2 in chromList1[chrom]:
+                        if (loc1 == loc2):
+                            chro[chrom].append(loc1)
 
     return chro
 
@@ -53,7 +60,7 @@ def findCommon(chromList1, chromList2, chro = {}):
 def PlotGraph(commonChro_p, file_name1, file_name2):
     #Data:
     chro_label = ['chr' + str(i) for i in range(1, 25)]
-    chro_label_num = [i for i in range(1, 25)]
+    # chro_label_num = [i for i in range(1, 25)]
     loc = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     loc1 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
@@ -122,13 +129,14 @@ def PlotGraph(commonChro_p, file_name1, file_name2):
     plt.show()
 
 #Displaying the common locations found along with the chromosome found in both files           
-def display():
-    print('Displaying...')
-    if (len(commonChro) != 0):
-        for key in commonChro.keys():
-            print(f"Common chromosome found in: \n{display_path1[:-5]}: {commonChro[key][0]}\n{display_path2[:-5]}: {commonChro[key][1]}\npresent at location {key}")
+def display(final_dict):
+    if (len(final_dict) == 0):
+        print("No common locations found!")
     else:
-        return ("No common locations found!")
+        print('Displaying...')
+        for key in final_dict.keys():
+            print(f"Common chromosome found in: \n{display_path1[:-5]} and {display_path2[:-5]}: {commonChro[key]}\n at location {key}")
+        
 
 
 #DRIVER CODE
@@ -162,6 +170,7 @@ chromoList2 = storeData(df_dict_2)
 
 commonChro = findCommon(chromoList1, chromoList2)
 
-display()
+# print(commonChro)
+display(commonChro)
 
-PlotGraph(commonChro, display_path1[:-5], display_path2[:-5])
+# PlotGraph(commonChro, display_path1[:-5], display_path2[:-5])
