@@ -4,62 +4,101 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 
+chroName = ['chr' + str(i) for i in range(1, 23)]
+chroName.extend(['chrX', 'chrY'])
+
 #Sorting the excel file by Begin Location
 def SortData(dataFrame_p, ascending_p = True):
     print('Sorting data...')
 
-    dataFrame_p.sort_values(by = 'Begin Location', ascending = ascending_p, inplace = True)
+    sorted_frame = dataFrame_p.sort_values(by = 'Begin Location', ascending = ascending_p)
     
     print('Done.\n')
-    return dataFrame_p
+    return sorted_frame
 
-#Storing data in a dictionary and returning it
+def setLimitsSame(chrom_dict1, chrom_dict2):
+
+
+    chrom_dict1_para = chrom_dict1
+    chrom_dict2_para = chrom_dict2
+
+    diff = 0
+    for i in chroName:
+        if (i in chrom_dict1 and i in chrom_dict2):
+            chro1 = chrom_dict1[i]
+            chro2 = chrom_dict2[i]
+        
+            if (len(chro1) > len(chro2)):
+                diff = len(chro1) - len(chro2)
+                chro2.extend([0 for i in range(diff)])
+                chrom_dict2_para.update({i:chro2})
+        
+            else:
+                diff = len(chro2) - len(chro1)
+                chro1.extend([0 for i in range(diff)])
+                chrom_dict1_para.update({i:chro1})
+
+    return chrom_dict1_para, chrom_dict2_para
+
 def storeData(file_dict):
-    #creating dictonary to store the location and their respective chromosomes
+#creating dictonary to store the location and their respective chromosomes
     chromlist = defaultdict(list)
-
     print("Processing...")
-    
-    #store the location and chromosomes in the excel file
-    file_loc = file_dict['Begin Location']
+
+#store the location and chromosomes in the excel file
+    file_loc_b = file_dict['Begin Location']
+    file_loc_e = file_dict['End Location']
     file_chro = file_dict['Chromosome']
-
-    for chro, loc in zip(file_chro, file_loc):
-        chromlist[chro].append(loc)
-
+    
+    for chro, bloc, eloc in zip(file_chro, file_loc_b, file_loc_e):
+        if (pd.isna(eloc) and pd.isna(bloc)):
+            continue
+        elif (pd.isna(bloc)):
+            chromlist[chro].append(list(map(int,[eloc, eloc])))
+        elif (pd.isna(eloc)):
+            chromlist[chro].append(list(map(int,[bloc, bloc])))
+        else:
+            chromlist[chro].append(list(map(int,[bloc, eloc])))
+    
     return chromlist
 
-#Finding common location and their respective chromosome
-def findCommon(chromList1, chromList2, chro = {}):
-    print("Finding common...")
 
-    #Function to check and return which dataSet has more entries/values
-    def greater():
-        return len(chromList1) > len(chromList2)
+def findOverlap(chromlist1, chromlist2):
 
-    #accessing keys from the the dictonary and finding common ones
-    if (greater()):
-        for chrom in chromList1.keys():
-            if (chrom in chromList2.keys()):
-                for loc1 in chromList1[chrom]:
-                    for loc2 in chromList2[chrom]:
-                        if (loc1 == loc2):
-                            chro[chrom].append(loc1)
-		
-    else:
-        for chrom in chromList2.keys():
-            if (chrom in chromList1.keys()):
-                for loc1 in chromList2[chrom]:
-                    for loc2 in chromList1[chrom]:
-                        if (loc1 == loc2):
-                            chro[chrom].append(loc1)
+    def overlaps(L1, start_p, end_p):
+        for i in iter(L1):
+            start = max(i[0], start_p)
+            stop = min(i[1], end_p)
 
-    return chro
+            if (start > stop):
+                continue
+            else:
+                yield [start, stop]
+
+  
+    overlap_dict = defaultdict(list)
+
+    for i in chroName:
+        if (i in chromlist1 and i in chromlist2):
+            chro1 = chromlist1[i]
+            chro2 = chromlist2[i]
+            
+            chro1.sort()
+            chro2.sort()
+
+            if (len(chro1) != 0 and chro2 != 0):
+                if (len(chro1) > len(chro2)):   
+                    for j in chro2:
+                        start_stop = overlaps(chro1, j[0], j[1])
+                        for overlap_loc in start_stop:
+                            overlap_dict[i].append(overlap_loc)
+   
+    return overlap_dict
 
 #Plotting the values returned by the findCommon function
 def PlotGraph(commonChro_p, file_name1, file_name2):
     #Data:
-    chro_label = ['chr' + str(i) for i in range(1, 25)]
+    chro_label = ['chr' + str(i) for i in range(1, 23)]
     # chro_label_num = [i for i in range(1, 25)]
     loc = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     loc1 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
@@ -129,15 +168,14 @@ def PlotGraph(commonChro_p, file_name1, file_name2):
     plt.show()
 
 #Displaying the common locations found along with the chromosome found in both files           
-def display(final_dict):
+def displayOverlap(final_dict):
     if (len(final_dict) == 0):
-        print("No common locations found!")
+        print("No overlaps found!")
     else:
-        print('Displaying...')
-        for key in final_dict.keys():
-            print(f"Common chromosome found in: \n{display_path1[:-5]} and {display_path2[:-5]}: {commonChro[key]}\n at location {key}")
-        
-
+        print('Displaying...\n')
+        for chro,loc in final_dict.items():
+            if (loc != None):
+                print(f'{chro} -> {loc}\n')
 
 #DRIVER CODE
 path1 = input("Enter path for file 1: ")
@@ -145,32 +183,31 @@ path2 = input("Enter path for file 2: ")
 
 print("Reading Data...")
 
-colNames_toread = ['Chromosome', 'Begin Location']
+colNames_toread = ['Chromosome', 'Begin Location', 'End Location']
 df1 = pd.read_excel(r"{0}".format(path1))[colNames_toread]
 df2 = pd.read_excel(r"{0}".format(path2))[colNames_toread]
 
 display_path1 = path1.split('\\')[-1]
 display_path2 = path2.split('\\')[-1]
 
-sorted_ask = input("Do you want to sort the data/values to compare ?(Y/n) ")
-
-if (sorted_ask.lower() == 'y'):
-    df1 = SortData(df1)
-    df2 = SortData(df2)
-
 #displaying max no. of rows
 print(f"Total number of rows/entries in {display_path1[:-5]}: {df1.shape[0]}")
 print(f"Total number of rows/entries in {display_path2[:-5]}: {df2.shape[0]}")
 
-df_dict_1 = df1.to_dict('list')
-df_dict_2 = df2.to_dict('list')
+sorted_ask = input("Do you want to sort the data/values to compare ?(Y/n) ")
+if (sorted_ask.lower() == 'y'):
+    df1 = SortData(df1)
+    df2 = SortData(df2)
 
-chromoList1 = storeData(df_dict_1)
-chromoList2 = storeData(df_dict_2)
+df1_toDict1 = df1.to_dict('list')
+df2_toDict2 = df2.to_dict('list')
 
-commonChro = findCommon(chromoList1, chromoList2)
+chromoList1 = storeData(df1_toDict1)
+chromoList2 = storeData(df2_toDict2)
 
-# print(commonChro)
-display(commonChro)
+overlaps = findOverlap(chromoList1, chromoList2)
+# # equal_val_chromL1, equal_val_chromL2 = setLimitsSame(chromoList1, chromoList2)
+
+displayOverlap(overlaps)
 
 # PlotGraph(commonChro, display_path1[:-5], display_path2[:-5])
