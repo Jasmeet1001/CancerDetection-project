@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mat
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from collections import defaultdict
 
 chroName = ['chr' + str(i) for i in range(1, 23)]
@@ -60,12 +61,15 @@ def storeData(file_dict):
         else:
             chromlist[chro].append(list(map(int,[bloc, eloc])))
     
+    print("Done")
+
     return chromlist
 
 
 def findOverlap(chromlist1, chromlist2):
 
     def overlaps(L1, start_p, end_p):
+        x = []
         for i in iter(L1):
             start = max(i[0], start_p)
             stop = min(i[1], end_p)
@@ -73,8 +77,9 @@ def findOverlap(chromlist1, chromlist2):
             if (start > stop):
                 continue
             else:
-                yield [start, stop]
-
+                x.extend(list(range(start, stop + 1)))
+                # yield x
+        return x
   
     overlap_dict = defaultdict(list)
 
@@ -90,10 +95,60 @@ def findOverlap(chromlist1, chromlist2):
                 if (len(chro1) > len(chro2)):   
                     for j in chro2:
                         start_stop = overlaps(chro1, j[0], j[1])
-                        for overlap_loc in start_stop:
-                            overlap_dict[i].append(overlap_loc)
+                        # for overlap_loc in start_stop:
+                        overlap_dict[i].extend(start_stop)
+                else:
+                    for j in chro1:
+                        start_stop = overlaps(chro2, j[0], j[1])
+                        # for overlap_loc in start_stop:
+                        overlap_dict[i].extend(start_stop)
    
     return overlap_dict
+
+def plot_grph(overlap_dict, chrNum):
+    fig,axes = plt.subplots(1, 2, figsize = (16,9))
+    fig.suptitle(f"Overlapping Locations(Chromosome {chrNum})")
+    
+    #linePlot
+    line = sns.lineplot(ax = axes[0],x = overlap_dict[f'chr{chrNum}'], y = overlap_dict[f'chr{chrNum}'], marker = 'o')
+    for x,m in zip(overlap_dict[f'chr{chrNum}'], overlap_dict[f'chr{chrNum}']): 
+        axes.text(x = x, y = x, s = f'{m:.0f}')
+    line.set_xlabel("VIS-HBV")
+    line.set_ylabel("Mutations")
+
+    #HistPlot(Shrink = 0.75)
+    hist_p = sns.histplot(ax = axes[1], x=overlaps[f'chr{chrNum}'], y = overlaps[f'chr{chrNum}'], color="#4CB391", cbar=True, cbar_kws = dict(shrink = .75), stat='count')
+    hist_p.set_xlabel("VIS-HBV")
+    hist_p.set_ylabel("Mutations")
+
+    #scatterPlot
+    # scatter = sns.scatterplot(x = overlaps['chr1'], y = overlaps['chr1'])
+    # for x,m in zip(overlaps['chr1'], overlaps['chr1']): 
+    #     scatter.text(x = x, y = x, s = f'{m:.0f}')
+
+    # scatter.set_xlabel("VIS-HBV")
+    # scatter.set_ylabel("Mutations")
+    # scatter.set_title("Overlapping Locations(Chromosome 1)")
+
+    #HistPlot
+    # sns.histplot(x=overlaps['chr1'], y = overlaps['chr1'], color="#4CB391", cbar=True, cbar_kws = dict(shrink = .5), stat='count')
+    
+    #Withoout Shrink
+    # hist_p = sns.histplot(x=overlaps['chr1'], y = overlaps['chr1'], color="#4CB391", cbar=True, stat='count')
+    # hist_p.set_xlabel("VIS-HBV")
+    # hist_p.set_ylabel("Mutations")
+    # hist_p.set_title("Overlapping Locations(Chromosome 1)")
+
+    #KdePlot
+    # kde = sns.kdeplot(overlaps['chr1'], fill = True)
+    # kde.set_xlabel('Overlapping Locations(Chromosome 1)')
+
+    #JointPlot
+    # joint = sns.jointplot(x=overlaps['chr1'], y=overlaps['chr1'], kind="hist",color="#4CB391")
+    # joint.set_axis_labels('VIS-HBV', 'Mutations')
+    # joint.fig.suptitle("Overlapping Locations(Chromosome 1)")
+    
+    plt.show()
 
 #Plotting the values returned by the findCommon function
 def PlotGraph(commonChro_p, file_name1, file_name2):
@@ -123,7 +178,8 @@ def PlotGraph(commonChro_p, file_name1, file_name2):
     fig, ax = plt.subplots(figsize = (16,9))
 
     #setting the x axis limits
-    ax.set_xlim([50, 2_050_084_860])
+    ax.set_xlim([0, 248_956_422])
+    ax.set_xlim(right = 248_956_422)
 
     #creating an array of the number of labels present
     y = np.arange(len(chro_label))
@@ -168,14 +224,13 @@ def PlotGraph(commonChro_p, file_name1, file_name2):
     plt.show()
 
 #Displaying the common locations found along with the chromosome found in both files           
-def displayOverlap(final_dict):
-    if (len(final_dict) == 0):
+def displayOverlap(final_dict, chrNum):
+    if (not(('chr' + chrNum) in final_dict) or len(final_dict[('chr' + chrNum)]) == 0):
         print("No overlaps found!")
     else:
         print('Displaying...\n')
-        for chro,loc in final_dict.items():
-            if (loc != None):
-                print(f'{chro} -> {loc}\n')
+        print(f'Chromosome {chrNum} -> {final_dict[('chr' + chrNum)]}')
+
 
 #DRIVER CODE
 path1 = input("Enter path for file 1: ")
@@ -186,6 +241,8 @@ print("Reading Data...")
 colNames_toread = ['Chromosome', 'Begin Location', 'End Location']
 df1 = pd.read_excel(r"{0}".format(path1))[colNames_toread]
 df2 = pd.read_excel(r"{0}".format(path2))[colNames_toread]
+
+print("Done")
 
 display_path1 = path1.split('\\')[-1]
 display_path2 = path2.split('\\')[-1]
@@ -206,8 +263,21 @@ chromoList1 = storeData(df1_toDict1)
 chromoList2 = storeData(df2_toDict2)
 
 overlaps = findOverlap(chromoList1, chromoList2)
-# # equal_val_chromL1, equal_val_chromL2 = setLimitsSame(chromoList1, chromoList2)
 
-displayOverlap(overlaps)
+print("Show overlaps for:\n")
+for num, name in enumerate(chroName, 1):
+    print(f"{num}. Chromosome {name.split('r')[1]}\n")
 
-# PlotGraph(commonChro, display_path1[:-5], display_path2[:-5])
+while(True):
+
+    chr_to_show = input("Enter chromosome name: ") 
+    plot_grph(overlaps, chr_to_show)
+    displayOverlap(overlaps, chr_to_show)
+
+    print('Exit(y/n): ')
+    ext = input()
+    if (ext == 'y'):
+        print('Quitting...')
+        break
+    else:
+        continue
