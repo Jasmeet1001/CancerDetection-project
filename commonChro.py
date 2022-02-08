@@ -432,7 +432,7 @@ def plot_grph(overlap_dict, chrNum):
     
     plt.show()
 
-def chromosomeDraw(norm_values, chro_num):
+def chromosomeDraw(norm_values, annot, chro_num):
     fig, ax = plt.subplots()
 
     single_mutation = 'blue'
@@ -440,10 +440,13 @@ def chromosomeDraw(norm_values, chro_num):
 
     ax.add_patch(plt.Rectangle((0, 45), int(chromosome_lengths['chr' + chro_num]['eL'].split('_')[0]), 10, fc = 'black'))
     
-    for plot in norm_values:
+    for count, plot in enumerate(norm_values):
         
         if (len(plot) == 1):
             ax.plot([plot['bL'], plot['bL']], [45.5, 54.5], color = single_mutation)
+            for x,m in zip(plot['bL'], [54.5]):
+                t = annot[count]['bL']
+                ax.text(x = x, y = m, s = f'{t:.0f}')
         
         elif (len(plot) == 2):
             ax.plot([plot['bL'], plot['bL']], [45.5, 54.5], color = ranged_mutation)
@@ -451,6 +454,17 @@ def chromosomeDraw(norm_values, chro_num):
 
             ax.plot([plot['bL'], plot['eL']], [54.5, 54.5], color = ranged_mutation)
             ax.plot([plot['bL'], plot['eL']], [45.5, 45.5], color = ranged_mutation)
+            
+            counters = 0
+            for x,m in zip([plot['bL'], plot['eL']], [54.5, 54.5]):
+                if (counters == 0):
+                    t = annot[count]['bL']
+                    counters += 1
+                elif (counters == 1):
+                    t = annot[count]['eL']
+
+                ax.text(x = x, y = m, s = f'{t:.0f}')
+            counters = 0
             
     plt.yticks([])
     plt.xlim(-10, int(chromosome_lengths['chr' + chro_num]['eL'].split('_')[0]) + 10)
@@ -517,7 +531,7 @@ while(True):
     if (disp_noDup != "No overlaps found!"):
         print(disp_noDup)
         plot_grph(overlaps_std_wth_Dup[('chr' + chr_to_show)], chr_to_show)
-        chromosomeDraw(overlaps_normalized[('chr' + chr_to_show)], chr_to_show)
+        chromosomeDraw(overlaps_normalized[('chr' + chr_to_show)], overlaps[('chr' + chr_to_show)],chr_to_show)
         print('Exit(y/n): ')
         ext = input()
         if (ext == 'y'):
