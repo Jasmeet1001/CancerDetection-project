@@ -75,7 +75,6 @@ def chromDraw(norm_overlaps, chrom_toShow):
             rect.forward(60)
             rect.left(90)
         rect.end_fill()
-    ##  rect.color('')
         rect.forward(600)
         rect.right(180)
 
@@ -132,13 +131,6 @@ def chromDraw(norm_overlaps, chrom_toShow):
                     rect.pendown()
                     rect.forward(52)
 
-    ##                rect.penup()
-    ##                rect.forward(20)
-    ##                rect.pendown()
-    ##                rect.write(f"{over_ori[i][j]['bL']}", font=("Verdana", 8, "normal"), align = 'right')
-    ##                rect.penup()
-    ##                rect.backward(20)
-
                     rect.left(90)
 
                     if (not first):
@@ -160,7 +152,6 @@ def chromDraw(norm_overlaps, chrom_toShow):
                             else:
                                 if ((j == (len(over[i]) - 1)) or ((len(zoom_list_single) > 1 or len(zoom_list_double) > 1))):
                                     zoom()
-    ##                              for i in zoom_list_single_noDup:
 
 
                         elif (len(over[i][j - 1]) == 1):
@@ -193,26 +184,9 @@ def chromDraw(norm_overlaps, chrom_toShow):
 
                     rect.begin_fill()
                     rect.forward(52)
-    ##                rect.penup()
-    ##                rect.forward(20)
-    ##                rect.pendown()
-    ##                rect.write(f"{over_ori[i][j]['bL']}", font=("Verdana", 8, "normal"), align = 'right')
-    ##                rect.penup()
-    ##                rect.backward(20)
-    ##                rect.pendown()
 
                     rect.left(90)
                     rect.forward(over[i][j]['eL'] - over[i][j]['bL'])
-
-    ##                rect.penup()
-    ##                rect.right(90)
-    ##                rect.forward(20)
-    ##                rect.pendown()
-    ##                rect.write(f"  {over_ori[i][j]['eL']}", font=("Verdana", 8, "normal"), align = 'left')
-    ##                rect.penup()
-    ##                rect.backward(20)
-    ##                rect.pendown()
-    ##                rect.left(90)
 
                     rect.left(90)
                     rect.forward(52)
@@ -293,12 +267,13 @@ def chromDraw(norm_overlaps, chrom_toShow):
         turtle.done()
 
 
-def to_json(original_overlaps, normalized_overlaps, file_name, file_name_normalized):
+def to_json(original_overlaps, file_name):
+
     with open(f"{file_name}.json", 'w') as ori_overlaps:
         json.dump(original_overlaps, ori_overlaps, indent = 0)
     
-    with open(f"{file_name_normalized}.json", 'w') as norm_overlaps:
-        json.dump(normalized_overlaps, norm_overlaps, indent = 0)
+    # with open(f"{file_name_normalized}.json", 'w') as norm_overlaps:
+    #     json.dump(normalized_overlaps, norm_overlaps, indent = 0)
 
 
 def storeData(file_dict):
@@ -319,6 +294,8 @@ def storeData(file_dict):
         elif (pd.isna(eloc)):
             chromlist[chro].append(list(map(int,[bloc, bloc])))
         else:
+            if (bloc > eloc):
+                bloc, eloc = eloc, bloc
             chromlist[chro].append(list(map(int,[bloc, eloc])))
     
     print("Done")
@@ -376,7 +353,10 @@ def findOverlap(chromlist1, chromlist2):
         overlap_dict[i].clear()
 
         for val in overlaps_noDup:
-            overlap_dict[i].append({'bL': val[0], 'eL': val[1]})
+            if (val[0] == val[1]):
+                overlap_dict[i].append({'bL': val[0]})
+            else:
+                overlap_dict[i].append({'bL': val[0], 'eL': val[1]})
 
     return overlap_dict, overlap_dict_plot
 
@@ -395,80 +375,70 @@ def normalize(overlaps_file):
     return normalized_overlaps
 
 
-def plot_grph(overlap_dict, chrNum):
+def plot_grph(overlap_dict, chrNum, virus_name):
 
-    fig,ax = plt.subplots(nrows=2, ncols=1)
-    fig.suptitle(f"Overlapping Locations(Chromosome {chrNum})")
-
-    norm_overlap_dict = []
-    overlaps_count = {}
+    fig,ax = plt.subplots()
+    fig.suptitle(f"Overlapping Locations(Chromosome {chrNum}) {virus_name}")
     
-    for val in overlap_dict:
-        temp_norm = ((val - int(chromosome_lengths[f'chr{chrNum}']['bL']))/(int(chromosome_lengths[f'chr{chrNum}']['eL']) - int(chromosome_lengths[f'chr{chrNum}']['bL']))) * (int(chromosome_lengths[f'chr{chrNum}']['eL'].split('_')[0]) - int(chromosome_lengths[f'chr{chrNum}']['bL'])) + int(chromosome_lengths[f'chr{chrNum}']['bL'])
-        norm_overlap_dict.append(temp_norm)
-    
-    overlapdict_listval_noDup = list(dict.fromkeys(norm_overlap_dict))
-    for dup in overlapdict_listval_noDup:
-        overlaps_count[dup] = norm_overlap_dict.count(dup)
+    overlapdict_listval_noDup = list(dict.fromkeys(overlap_dict))
 
     #linePlot with locations
-    line = sns.lineplot(ax = ax[0], x = overlapdict_listval_noDup, y = overlapdict_listval_noDup, marker = 'o')
-    for x,m in zip(overlapdict_listval_noDup, overlapdict_listval_noDup): 
-        line.text(x = x, y = x, s = f'{m:.6f}')
-    line.set_xlim(int(chromosome_lengths[f'chr{chrNum}']['bL']), int(chromosome_lengths[f'chr{chrNum}']['eL'].split('_')[0]))
-    line.set_ylim(int(chromosome_lengths[f'chr{chrNum}']['bL']), int(chromosome_lengths[f'chr{chrNum}']['eL'].split('_')[0]))
-    line.set_xlabel("VIS-HBV")
+    line = sns.scatterplot(x = overlapdict_listval_noDup, y = overlapdict_listval_noDup, marker = 'o')
+    
+    line.set_xlim(int(chromosome_lengths[f'chr{chrNum}']['bL']), int(chromosome_lengths[f'chr{chrNum}']['eL']))
+    line.set_ylim(int(chromosome_lengths[f'chr{chrNum}']['bL']), int(chromosome_lengths[f'chr{chrNum}']['eL']))
+    
+    line.set_xlabel("VIS")
     line.set_ylabel("Mutations")
-
-    #lineplot with duplicate values
-    line_count = sns.lineplot(ax = ax[1], x = overlaps_count.keys(), y = overlaps_count.values(),  marker = 'o')
-    for x,m in zip(overlaps_count.keys(), overlaps_count.values()):
-        line_count.text(x = x, y = m, s = f'{m:.0f}')
-
-    line_count.set_xlim(int(chromosome_lengths[f'chr{chrNum}']['bL']), int(chromosome_lengths[f'chr{chrNum}']['eL'].split('_')[0]))
-    line_count.set_ylim(0, max(overlaps_count.values()) + 1)
-    line_count.set_xlabel("Overlaps")
-    line_count.set_ylabel("Number of occurences")
     
     plt.show()
 
-def chromosomeDraw(norm_values, annot, chro_num):
+def chromosomeDraw(annot, chro_num, virus_nme):
     fig, ax = plt.subplots()
+
+    color_select = ['#fe6507', '#042db3', '#57bf3c', '#f8cc16', '#6c2778']
 
     single_mutation = 'blue'
     ranged_mutation = 'red'
 
-    ax.add_patch(plt.Rectangle((0, 45), int(chromosome_lengths['chr' + chro_num]['eL'].split('_')[0]), 10, fc = 'black'))
+    ax.add_patch(plt.Rectangle((0, 45), int(chromosome_lengths['chr' + chro_num]['eL']), 1, fc = '#414141'))
     
-    for count, plot in enumerate(norm_values):
-        
+    starting_loc = int(chromosome_lengths['chr' + chro_num]['bL'])
+    ending_loc = int(chromosome_lengths['chr' + chro_num]['eL'])
+
+    ax.text(x = 0, y = 47, s = f'{starting_loc:.0f}', color = 'black', horizontalalignment = 'center')
+    ax.text(x = ending_loc, y = 47, s = f'{ending_loc:.0f}', horizontalalignment = 'center')
+
+    ax.text(x = int(chromosome_lengths['chr' + chro_num]['eL'])/2, y = 55, s = f'Chromosome{chro_num}({virus_nme})', horizontalalignment = 'center')
+    
+    count = 0
+    for plot in annot:
+        colors = color_select[count]
+        if (count == len(color_select) - 1):
+            count = 0
+        else:
+            count += 1
+
         if (len(plot) == 1):
-            ax.plot([plot['bL'], plot['bL']], [45.5, 54.5], color = single_mutation)
-            for x,m in zip(plot['bL'], [54.5]):
-                t = annot[count]['bL']
-                ax.text(x = x, y = m, s = f'{t:.0f}')
+            ax.plot([plot['bL'], plot['bL']], [43, 48], color = colors)
         
         elif (len(plot) == 2):
-            ax.plot([plot['bL'], plot['bL']], [45.5, 54.5], color = ranged_mutation)
-            ax.plot([plot['eL'], plot['eL']], [46, 54], color = ranged_mutation)
+            ax.plot([plot['bL'], plot['bL']], [43, 48], color = ranged_mutation)
+            ax.plot([plot['eL'], plot['eL']], [43, 48], color = ranged_mutation)
 
-            ax.plot([plot['bL'], plot['eL']], [54.5, 54.5], color = ranged_mutation)
-            ax.plot([plot['bL'], plot['eL']], [45.5, 45.5], color = ranged_mutation)
-            
-            counters = 0
-            for x,m in zip([plot['bL'], plot['eL']], [54.5, 54.5]):
-                if (counters == 0):
-                    t = annot[count]['bL']
-                    counters += 1
-                elif (counters == 1):
-                    t = annot[count]['eL']
+            ax.plot([plot['bL'], plot['eL']], [48, 48], color = ranged_mutation)
+            ax.plot([plot['bL'], plot['eL']], [43, 43], color = ranged_mutation)
+    
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
-                ax.text(x = x, y = m, s = f'{t:.0f}')
-            counters = 0
-            
-    plt.yticks([])
-    plt.xlim(-10, int(chromosome_lengths['chr' + chro_num]['eL'].split('_')[0]) + 10)
+    plt.xlim(-10, int(chromosome_lengths['chr' + chro_num]['eL']))
+    plt.yticks([])    
     plt.ylim(-10, 100)
+
+    ax.set_xlabel("Chromosome Length(BP)")
+
     plt.show()
 
 #Displaying the common locations found along with the chromosome found in both files           
@@ -485,6 +455,7 @@ def displayOverlap(final_overlap_list, chrNum):
 
 path1 = input("Enter path for file 1: ")
 path2 = input("Enter path for file 2: ")
+vName = input("Enter Virus Name: ")
 
 print("Reading Data...")
 
@@ -515,9 +486,9 @@ chromoList1 = storeData(df1_toDict1)
 chromoList2 = storeData(df2_toDict2)
 
 overlaps, overlaps_std_wth_Dup = findOverlap(chromoList1, chromoList2)
-overlaps_normalized = normalize(overlaps)
+# overlaps_normalized = normalize(overlaps)
 
-# to_json(overlaps, overlaps_normalized, f"{display_path1[:-5]}_{display_path2[:-5]}Overlaps", f"{display_path1[:-5]}_{display_path2[:-5]}_NormalizedOverlaps")
+to_json(overlaps, f"{display_path1[:-5]}_{display_path2[:-5]}Overlaps")
 
 print("Show overlaps for:\n")
 for num, name in enumerate(chroName, 1):
@@ -530,8 +501,8 @@ while(True):
 
     if (disp_noDup != "No overlaps found!"):
         print(disp_noDup)
-        plot_grph(overlaps_std_wth_Dup[('chr' + chr_to_show)], chr_to_show)
-        chromosomeDraw(overlaps_normalized[('chr' + chr_to_show)], overlaps[('chr' + chr_to_show)],chr_to_show)
+        plot_grph(overlaps_std_wth_Dup[('chr' + chr_to_show)], chr_to_show, vName)
+        chromosomeDraw(overlaps[('chr' + chr_to_show)],chr_to_show, vName)
         print('Exit(y/n): ')
         ext = input()
         if (ext == 'y'):
