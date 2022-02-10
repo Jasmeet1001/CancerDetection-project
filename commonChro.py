@@ -39,7 +39,6 @@ def chromDraw(norm_overlaps, chrom_toShow):
     first = True
 
     def zoom():
-        rect.speed(1)
         rect.color('black')
         rect.penup()
         rect.setposition(x, new_y)
@@ -275,6 +274,20 @@ def to_json(original_overlaps, file_name):
     # with open(f"{file_name_normalized}.json", 'w') as norm_overlaps:
     #     json.dump(normalized_overlaps, norm_overlaps, indent = 0)
 
+def convert_excel(overlap_file, file_name):
+    df_first = pd.DataFrame(columns = ['Chromosome', 'Begin Location', 'End Location'])
+
+    for chro in overlap_file:
+        if (len(overlap_file[chro]) != 0):
+            for loc in overlap_file[chro]:
+                if (len(loc) == 1):
+                    df1 = pd.DataFrame({'Chromosome': [chro], 'Begin Location': [loc['bL']], 'End Location': [loc['bL']]}, columns = ['Chromosome', 'Begin Location', 'End Location'])
+                    df_first = pd.concat([df_first, df1])
+                elif (len(loc) == 2):
+                    df2 = pd.DataFrame({'Chromosome': [chro], 'Begin Location': [loc['bL']], 'End Location': [loc['eL']]}, columns = ['Chromosome', 'Begin Location', 'End Location'])
+                    df_first = pd.concat([df_first, df2])
+
+    df_first.to_excel(f'{file_name}.xlsx', sheet_name = 'Sheet1', index = False)
 
 def storeData(file_dict):
 #creating dictonary to store the location and their respective chromosomes
@@ -488,7 +501,13 @@ chromoList2 = storeData(df2_toDict2)
 overlaps, overlaps_std_wth_Dup = findOverlap(chromoList1, chromoList2)
 # overlaps_normalized = normalize(overlaps)
 
-to_json(overlaps, f"{display_path1[:-5]}_{display_path2[:-5]}Overlaps")
+convert_json = input('Create json file of outputs: ')
+if (convert_json.lower() == 'y'):
+    to_json(overlaps, f"Overlaps_{display_path1[:-5]}_{display_path2[:-5]}")
+
+convert_ex = input('Create excel file of the outputs: ')
+if (convert_ex.lower() == 'y'):
+    convert_excel(overlaps, f"overlaps_{display_path1[:-5]}_{display_path2[:-5]}")
 
 print("Show overlaps for:\n")
 for num, name in enumerate(chroName, 1):
