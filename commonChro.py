@@ -281,7 +281,7 @@ def convert_excel(overlap_file, file_name):
         if (len(overlap_file[chro]) != 0):
             for loc in overlap_file[chro]:
                 if (len(loc) == 1):
-                    df1 = pd.DataFrame({'Chromosome': [chro], 'Begin Location': [loc['bL']], 'End Location': [loc['bL']]}, columns = ['Chromosome', 'Begin Location', 'End Location'])
+                    df1 = pd.DataFrame({'Chromosome': [chro], 'Begin Location': [loc['bL']], 'End Location': ['-']}, columns = ['Chromosome', 'Begin Location', 'End Location'])
                     df_first = pd.concat([df_first, df1])
                 elif (len(loc) == 2):
                     df2 = pd.DataFrame({'Chromosome': [chro], 'Begin Location': [loc['bL']], 'End Location': [loc['eL']]}, columns = ['Chromosome', 'Begin Location', 'End Location'])
