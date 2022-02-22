@@ -387,7 +387,6 @@ def normalize(overlaps_file):
 
     return normalized_overlaps
 
-
 def plot_grph(overlap_dict, chrNum, virus_name):
 
     fig,ax = plt.subplots()
@@ -421,7 +420,6 @@ def chromosomeDraw(annot, chro_num, virus_nme):
 
     ax.text(x = 0, y = 47, s = f'{starting_loc:.0f}', color = 'black', horizontalalignment = 'center')
     ax.text(x = ending_loc, y = 47, s = f'{ending_loc:.0f}', horizontalalignment = 'center')
-
     ax.text(x = int(chromosome_lengths['chr' + chro_num]['eL'])/2, y = 55, s = f'Chromosome{chro_num}({virus_nme})', horizontalalignment = 'center')
     
     count = 0
@@ -463,9 +461,7 @@ def displayOverlap(final_overlap_list, chrNum):
         print('Displaying...\n')
         return f"Chromosome {chrNum} -> {values_noDup}"
 
-
 #DRIVER CODE
-
 path1 = input("Enter path for file 1: ")
 path2 = input("Enter path for file 2: ")
 vName = input("Enter Virus Name: ")
@@ -481,7 +477,6 @@ if (path1[-4:] == 'xlsx' and path2[-4:] == 'xlsx'):
 elif (path1[-4:] == 'json' and path2[-4:] == 'json'):
     df1 = pd.read_json(r"{0}".format(path1))[colNames_toread]
     df2 = pd.read_json(r"{0}".format(path2))[colNames_toread]
-
 
 print("Done")
 
