@@ -345,7 +345,7 @@ def find_overlap(chrom_list1: dict, chrom_list2: dict):
             chro1.sort()
             chro2.sort()
 
-            if (len(chro1) != 0 and chro2 != 0):
+            if (len(chro1) != 0 and len(chro2) != 0):
                 if (len(chro1) > len(chro2)):   
                     
                     for j in chro2:
