@@ -15,6 +15,71 @@ CHROMOSOME_LENGTHS = {'chr1': {'bL': '0', 'eL': '250_000_000'}, 'chr2': {'bL': '
 'chr18': {'bL': '0', 'eL': '77_000_000'}, 'chr19': {'bL': '0', 'eL': '64_000_000'}, 'chr20': {'bL': '0', 'eL': '63_000_000'}, 'chr21': {'bL': '0', 'eL': '47_000_000'}, 
 'chr22': {'bL': '0', 'eL': '50_000_000'}, 'chrX': {'bL': '0', 'eL': '155_000_000'}, 'chrY': {'bL': '0', 'eL': '58_000_000'}}
 
+def run(file_path1: str, file_path2: str, virus_name: str):
+    print("Reading Data...")
+
+    colNames_toread = ['Chromosome', 'Begin Location', 'End Location']
+
+    if (file_path1[-4:] == 'xlsx'):
+        df1 = pd.read_excel(r"{0}".format(file_path1))[colNames_toread]
+    elif (file_path1[-4:] == 'json'):
+        df1 = pd.read_json(r"{0}".format(file_path1))[colNames_toread]
+
+    if (file_path2[-4:] == 'xlsx'):
+        df2 = pd.read_excel(r"{0}".format(file_path2))[colNames_toread]
+    elif (file_path2[-4:] == 'json'):
+        df2 = pd.read_json(r"{0}".format(file_path2))[colNames_toread]
+
+    print("Done")
+
+    display_path1 = file_path1.split('\\')[-1]
+    display_path2 = file_path2.split('\\')[-1]
+
+    #displaying max no. of rows
+    print(f"Total number of rows/entries in {display_path1[:-5]}: {df1.shape[0]}")
+    print(f"Total number of rows/entries in {display_path2[:-5]}: {df2.shape[0]}")
+
+    df1_to_dict1 = df1.to_dict('list')
+    df2_to_dict2 = df2.to_dict('list')
+
+    chromo_list1 = store_data(df1_to_dict1)
+    chromo_list2 = store_data(df2_to_dict2)
+
+    overlaps, overlaps_std_wth_dup = find_overlap(chromo_list1, chromo_list2)
+    # overlaps_normalized = normalize(overlaps)
+
+    convert_json = input('Create json file of outputs: ')
+    if (convert_json.lower() == 'y'):
+        to_json(overlaps, f"Overlaps_{display_path1[:-5]}_{display_path2[:-5]}")
+
+    convert_ex = input('Create excel file of the outputs: ')
+    if (convert_ex.lower() == 'y'):
+        convert_excel(overlaps, f"overlaps_{display_path1[:-5]}_{display_path2[:-5]}")
+
+    print("Show overlaps for:\n")
+    for num, name in enumerate(CHRO_NAME, 1):
+        print(f"{num}. Chromosome {name.split('r')[1]}\n")
+
+    while (True):
+
+        chr_to_show = input("Enter chromosome name: ")
+        disp_nodup = display_overlap(overlaps_std_wth_dup[f'chr{chr_to_show}'], chr_to_show)
+
+        if (disp_nodup != "No overlaps found!"):
+        
+            print(disp_nodup)
+            plot_grph(overlaps_std_wth_dup[f'chr{chr_to_show}'], chr_to_show, virus_name)
+            chromosome_draw(overlaps[f'chr{chr_to_show}'],chr_to_show, virus_name)
+        
+            print('Exit(y/n): ')    
+            ext = input()
+            if (ext == 'y'):
+                print('Quitting...')
+                break
+    
+        else:
+            print(disp_nodup)
+
 def chrom_draw(norm_overlaps: str, chrom_toShow: str):
     rect = turtle.Turtle()
     turtle.setup(1920, 1080)
@@ -290,11 +355,11 @@ def convert_excel(overlap_file: dict, file_name: str):
     df_first.to_excel(f'{file_name}.xlsx', sheet_name = 'Sheet1', index = False)
 
 def store_data(file_dict: dict):
-#creating dictonary to store the location and their respective chromosomes
+    #creating dictonary to store the location and their respective chromosomes
     chrom_list = defaultdict(list)
     print("Processing...", end = '')
 
-#store the location and chromosomes in the excel file
+    #store the location and chromosomes in the excel file
     file_loc_b = file_dict['Begin Location']
     file_loc_e = file_dict['End Location']
     file_chro = file_dict['Chromosome']
@@ -387,10 +452,10 @@ def normalize(overlaps_file):
 
     return normalized_overlaps
 
-def plot_grph(overlap_dict: list, chr_num: str, virus_name: str):
+def plot_grph(overlap_dict: list, chr_num: str, virus_name_p: str):
 
     fig,ax = plt.subplots()
-    fig.suptitle(f'Overlapping Locations(Chromosome {chr_num}) {virus_name}')
+    fig.suptitle(f'Overlapping Locations(Chromosome {chr_num}) {virus_name_p}')
     
     overlapdict_listval_nodup = list(dict.fromkeys(overlap_dict))
 
@@ -405,7 +470,7 @@ def plot_grph(overlap_dict: list, chr_num: str, virus_name: str):
     
     plt.show()
 
-def chromosome_draw(annot: list, chro_num: str, virus_nme: str):
+def chromosome_draw(annot: list, chro_num: str, virus_name_p: str):
     fig, ax = plt.subplots()
 
     color_select = ['#fe6507', '#042db3', '#57bf3c', '#f8cc16', '#6c2778']
@@ -420,7 +485,7 @@ def chromosome_draw(annot: list, chro_num: str, virus_nme: str):
 
     ax.text(x = 0, y = 47, s = f'{starting_loc:.0f}', color = 'black', horizontalalignment = 'center')
     ax.text(x = ending_loc, y = 47, s = f'{ending_loc:.0f}', horizontalalignment = 'center')
-    ax.text(x = int(CHROMOSOME_LENGTHS[f'chr{chro_num}']['eL'])/2, y = 55, s = f'Chromosome{chro_num}({virus_nme})', horizontalalignment = 'center')
+    ax.text(x = int(CHROMOSOME_LENGTHS[f'chr{chro_num}']['eL'])/2, y = 55, s = f'Chromosome{chro_num}({virus_name_p})', horizontalalignment = 'center')
     
     count = 0
     for plot in annot:
@@ -464,71 +529,8 @@ def display_overlap(final_overlap_list: list, chr_num: str):
         return f'Chromosome {chr_num} -> {values_no_dup}'
 
 #DRIVER CODE
-path1 = input("Enter path for file 1: ")
-path2 = input("Enter path for file 2: ")
-v_name = input("Enter Virus Name: ")
-
-print("Reading Data...")
-
-colNames_toread = ['Chromosome', 'Begin Location', 'End Location']
-
-if (path1[-4:] == 'xlsx'):
-    df1 = pd.read_excel(r"{0}".format(path1))[colNames_toread]
-    df2 = pd.read_excel(r"{0}".format(path2))[colNames_toread]
-elif (path1[:-4] == 'json'):
-    df1 = pd.read_json(r"{0}".format(path1))[colNames_toread]
-
-if (path2[:-4] == 'xlsx'):
-    df2 = pd.read_excel(r"{0}".format(path2))[colNames_toread]
-elif (path2[:-4] == 'json'):
-    df2 = pd.read_json(r"{0}".format(path2))[colNames_toread]
-
-print("Done")
-
-display_path1 = path1.split('\\')[-1]
-display_path2 = path2.split('\\')[-1]
-
-#displaying max no. of rows
-print(f"Total number of rows/entries in {display_path1[:-5]}: {df1.shape[0]}")
-print(f"Total number of rows/entries in {display_path2[:-5]}: {df2.shape[0]}")
-
-df1_to_dict1 = df1.to_dict('list')
-df2_to_dict2 = df2.to_dict('list')
-
-chromo_list1 = store_data(df1_to_dict1)
-chromo_list2 = store_data(df2_to_dict2)
-
-overlaps, overlaps_std_wth_dup = find_overlap(chromo_list1, chromo_list2)
-# overlaps_normalized = normalize(overlaps)
-
-convert_json = input('Create json file of outputs: ')
-if (convert_json.lower() == 'y'):
-    to_json(overlaps, f"Overlaps_{display_path1[:-5]}_{display_path2[:-5]}")
-
-convert_ex = input('Create excel file of the outputs: ')
-if (convert_ex.lower() == 'y'):
-    convert_excel(overlaps, f"overlaps_{display_path1[:-5]}_{display_path2[:-5]}")
-
-print("Show overlaps for:\n")
-for num, name in enumerate(CHRO_NAME, 1):
-    print(f"{num}. Chromosome {name.split('r')[1]}\n")
-
-while(True):
-
-    chr_to_show = input("Enter chromosome name: ")
-    disp_nodup = display_overlap(overlaps_std_wth_dup[f'chr{chr_to_show}'], chr_to_show)
-
-    if (disp_nodup != "No overlaps found!"):
-        
-        print(disp_nodup)
-        plot_grph(overlaps_std_wth_dup[f'chr{chr_to_show}'], chr_to_show, v_name)
-        chromosome_draw(overlaps[f'chr{chr_to_show}'],chr_to_show, v_name)
-        
-        print('Exit(y/n): ')    
-        ext = input()
-        if (ext == 'y'):
-            print('Quitting...')
-            break
-    
-    else:
-        print(disp_nodup)
+if (__name__ == '__main__'):
+    path1 = input("Enter path for file 1: ")
+    path2 = input("Enter path for file 2: ")
+    vir_name = input("Enter name of Virus: ")
+    run(path1, path2, vir_name)
